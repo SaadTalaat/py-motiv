@@ -2,7 +2,6 @@
 
 Todo:
     * Check sockaddr format
-    *
 """
 
 import os
@@ -12,7 +11,7 @@ from ensure import ensure_annotations, ensure
 from motiv.exceptions import AlreadyConnected, NotConnected
 from motiv.sync import SystemEvent
 from motiv.channel.mixin import ChannelType, ChannelInType, ChannelOutType
-from motiv.proto.zmq import create_socket
+from motiv.proto.zeromq import create_socket
 
 
 class ChannelOut(ChannelOutType):

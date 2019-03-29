@@ -1,19 +1,31 @@
+"""motiv synchronization primitives
+
+Module:
+    Using a uniform interface to define synchronization
+    primitives helps us use multiple execution frameworks
+    without changing any of the code written.
+    for example, multiprocessing vs threading.
+"""
 
 import abc
 
 
 class SystemEvent(abc.ABC):
+    """Event abstract class"""
 
     @abc.abstractmethod
     def is_set(self):
-        return
+        """checks if the event is set."""
 
     @abc.abstractmethod
     def set(self):
-        return
+        """sets the event"""
 
     @abc.abstractmethod
     def clear(self):
-        return
+        """clears the event"""
 
-__all__ = ['SystemEvent']
+
+__all__ = [
+        'SystemEvent',
+        ]
