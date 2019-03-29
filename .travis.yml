@@ -5,7 +5,7 @@ python:
   - "3.7"
 
 before_install:
-  - pip install nose nose-cov
+  - pip install nose nose-cov pylint
 
 install:
   - pip install -r requirements.txt
