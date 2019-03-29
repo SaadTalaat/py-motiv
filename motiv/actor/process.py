@@ -5,8 +5,8 @@ from multiprocessing import Process, Event
 
 from motiv.sync import SystemEvent
 from motiv.exceptions import ActorInitializationError
-from motiv.channel import ZMQPoller
-from motiv.streams.zmq import ZMQSender, ZMQReceiver, ZMQEmitter
+from motiv.channel import zeromq as zchannels
+from motiv.streams import zeromq as zstreams
 
 
 class ProcessEvent(SystemEvent):
@@ -58,7 +58,7 @@ class ActorProcessBase(Process, abc.ABC):
         return not self._halt.is_set()
 
 
-class ZMQActor(ActorProcessBase):
+class Actor(ActorProcessBase):
 
     def __init__(self, name):
         self.name = name
@@ -66,18 +66,21 @@ class ZMQActor(ActorProcessBase):
         self._stream_in = None
         self._stream_out = None
         self._stream = None
-        self.poller = ZMQPoller()
+        self.poller = zchannels.Poller()
+
+        # Properties
+        self._poll_interval = 5
 
     def proxy(self):
         if not(self.stream or (self.stream_in and self.stream_out)):
             raise ActorInitializationError("No streams set")
-        self.stream = self.stream or ZMQCompoundStream(self.stream_in, self.stream_out)
+        self.stream = self.stream or zstreams.CompoundStream(self.stream_in, self.stream_out)
         return self.stream.run()
 
     def receive(self):
         if not self.stream_in:
             raise ActorInitializationError("No in-stream set")
-        return self.stream_in.poll(self.poller, self._halt)
+        return self.stream_in.poll(self.poller, self._halt, self.poll_interval)
 
     def send(self, payload):
         if not self.stream_out:
@@ -85,21 +88,29 @@ class ZMQActor(ActorProcessBase):
         return self.stream_out.send(payload)
 
     def publish(self, topic, payload):
-        ensure(self.stream_out).is_a(ZMQEmitter)
+        ensure(self.stream_out).is_a(zstreams.Emitter)
         return self.stream_out.publish(topic, payload)
 
+
+    def setPollInterval(self, value):
+        self.poll_interval = value
+        return
+
+    ## Syntatic sugar
     def __add__(self, other):
-        if isinstance(other, ZMQSender) and isinstance(other, ZMQReceiver):
+        if isinstance(other, zstreams.Sender) and isinstance(other, zstreams.Receiver):
             self.stream = other
             return self
-        elif isinstance(other, ZMQSender):
+        elif isinstance(other, zstreams.Sender):
             self.stream_out = other
             return self
-        elif isinstance(other, ZMQReceiver):
+        elif isinstance(other, zstreams.Receiver):
             self.stream_in = other
             return self
         else:
             raise ValueError("Incompatible stream type")
+
+        return
 
     @property
     def stream_in(self):
@@ -107,20 +118,22 @@ class ZMQActor(ActorProcessBase):
 
     @stream_in.setter
     @ensure_annotations
-    def stream_in(self, value: ZMQReceiver):
+    def stream_in(self, value: zstreams.Receiver):
         if self.stream is not None:
             raise ValueError("stream_in is set from stream, reset stream to overwrite")
         self._stream_in = value
+        return
 
     @property
     def stream_out(self):
         return self._stream_out
 
     @stream_out.setter
-    def stream_out(self, value: ZMQSender):
+    def stream_out(self, value: zstreams.Sender):
         if self.stream is not None:
             raise ValueError("stream_out is set from stream, reset stream to overwrite")
         self._stream_out = value
+        return
 
     @property
     def stream(self):
@@ -128,8 +141,8 @@ class ZMQActor(ActorProcessBase):
 
     @stream.setter
     def stream(self, value):
-        if not(isinstance(value, ZMQSender) and isinstance(value, ZMQReceiver)):
-            raise ValueError("stream must be of type ZMQSender AND ZMQReceiver")
+        if not(isinstance(value, zstreams.Sender) and isinstance(value, zstreams.Receiver)):
+            raise ValueError("stream must be of type Sender AND Receiver")
 
         if self.stream_in is not None or self.stream_out is not None:
             raise ValueError("stream_in or stream_out or both are already set")
@@ -137,3 +150,14 @@ class ZMQActor(ActorProcessBase):
         self._stream = value
         self.stream_in = value.stream_in
         self.stream_out = value.stream_out
+        return
+
+    @property
+    def poll_interval(self):
+        return self._poll_interval
+
+    @poll_interval.setter
+    def poll_interval(self, value):
+        ensure(value).is_an(int)
+        self._poll_interval = value
+        return
