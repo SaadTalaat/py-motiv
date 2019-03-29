@@ -4,13 +4,20 @@ language: python
 python:
   - "3.7"
 
-before_install:
-  - pip install nose nose-cov pylint
-
 install:
   - pip install -r requirements.txt
   - python setup.py -q install
 
+before_script:
+  - pip install nose nose-cov pylint
+
 script:
   - nosetests
-  - pylint motiv/
+
+jobs:
+  include:
+    - stage: lint
+      script: pylint motiv/
+
+stages:
+  - lint
