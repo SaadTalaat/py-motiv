@@ -4,11 +4,11 @@ from ensure import ensure_annotations, ensure
 
 from motiv.exceptions import AlreadyConnected, NotConnected
 from motiv.sync import SystemEvent
-from motiv.channel.mixin import Channel, ChannelIn, ChannelOut
+from motiv.channel.mixin import ChannelType, ChannelInType, ChannelOutType
 from motiv.proto.zmq import create_socket
 
 
-class ZMQChannelOut(ChannelOut):
+class ChannelOut(ChannelOutType):
     """
     A sending only channel:
         out-channels bind to an address.
@@ -63,7 +63,7 @@ class ZMQChannelOut(ChannelOut):
         return self._sock_out
 
 
-class ZMQChannelIn(ChannelIn):
+class ChannelIn(ChannelInType):
     """
     A sending only channel:
         out-channels bind to an address.
@@ -95,7 +95,7 @@ class ZMQChannelIn(ChannelIn):
             raise NotConnected("channel has not binded nor connected")
         return self.sock_in.recv_multipart()
 
-    def poll(self, poller, exit_condition: SystemEvent, poll_interval=50):
+    def poll(self, poller, exit_condition: SystemEvent, poll_interval=5):
         if not self.sock_connected:
             raise NotConnected("channel has not binded nor connected")
         ensure(exit_condition).is_a(SystemEvent)
@@ -120,10 +120,10 @@ class ZMQChannelIn(ChannelIn):
         return self._sock_in
 
 
-class ZMQChannel(Channel):
+class Channel(ChannelType):
 
     @ensure_annotations
-    def __init__(self, channel_in: ZMQChannelIn, channel_out: ZMQChannelOut):
+    def __init__(self, channel_in: ChannelIn, channel_out: ChannelOut):
         self.cin = channel_in
         self.cout = channel_out
 
@@ -147,26 +147,26 @@ class ZMQChannel(Channel):
         self.cin.close()
         self.cout.close()
 
-class ZMQPoller(zmq.Poller):
+class Poller(zmq.Poller):
 
     @ensure_annotations
-    def register(self, channel: (ZMQChannelIn, ZMQChannelOut)):
+    def register(self, channel: (ChannelIn, ChannelOut)):
 
-        if isinstance(channel, ZMQChannelIn):
+        if isinstance(channel, ChannelIn):
             return super().register(channel.sock_in, zmq.POLLIN)
-        elif isinstance(channel, ZMQChannelOut):
+        elif isinstance(channel, ChannelOut):
             return super().register(channel.sock_out, zmq.POLLOUT)
         else:
             raise RuntimeError("Unknown error")
 
     @ensure_annotations
-    def unregister(self, channel: (ZMQChannelIn, ZMQChannelOut)):
-        if isinstance(channel, ZMQChannelIn):
+    def unregister(self, channel: (ChannelIn, ChannelOut)):
+        if isinstance(channel, ChannelIn):
             return super().unregister(channel.sock_in)
-        elif isinstance(channel, ZMQChannelOut):
+        elif isinstance(channel, ChannelOut):
             return super().unregister(channel.sock_out)
         else:
             raise RuntimeError("Unknown error")
 
 
-__all__ = ['ZMQChannel', 'ZMQChannelIn', 'ZMQChannelOut', 'ZMQPoller']
+__all__ = ['Channel', 'ChannelIn', 'ChannelOut', 'Poller']

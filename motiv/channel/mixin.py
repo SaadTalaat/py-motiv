@@ -3,7 +3,7 @@ import abc
 from ensure import ensure_annotations
 from motiv.sync import SystemEvent
 
-class ChannelOut(abc.ABC):
+class ChannelOutType(abc.ABC):
 
     @abc.abstractmethod
     def send(self, body):
@@ -13,7 +13,7 @@ class ChannelOut(abc.ABC):
     def close(self):
         pass
 
-class ChannelIn(abc.ABC):
+class ChannelInType(abc.ABC):
 
     @abc.abstractmethod
     def receive(self):
@@ -27,9 +27,9 @@ class ChannelIn(abc.ABC):
     def close(self):
         pass
 
-class Channel(ChannelIn, ChannelOut):
+class ChannelType(ChannelInType, ChannelOutType):
     pass
 
 __all__ = [
-        'Channel', 'ChannelIn', 'ChannelOut'
+        'ChannelType', 'ChannelInType', 'ChannelOutType'
         ]

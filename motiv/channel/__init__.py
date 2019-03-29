@@ -1,11 +1,9 @@
-from . import zmq, mixin, basic
+from . import zeromq, mixin
 
-from .zmq import *
+from .zeromq import *
 from .mixin import *
-from .basic import *
 
-__all__ = [ 'base', 'zmq', 'basic']
+__all__ = [ 'base', 'zeromq']
 __all__ += mixin.__all__
-__all__ += zmq.__all__
-__all__ += basic.__all__
+__all__ += zeromq.__all__
 
