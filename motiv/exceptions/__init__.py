@@ -1,12 +1,15 @@
+"""motiv exceptions
 
-class OrphanActorError(Exception):
-    pass
+"""
+
 
 class ActorInitializationError(Exception):
-    pass
+    """Exception to denote failure to initialize an actor"""
+
 
 class AlreadyConnected(Exception):
-    pass
+    """Exception that occurs connecting more than once"""
+
 
 class NotConnected(Exception):
-    pass
+    """Exception to denote that a channel isn't connected"""

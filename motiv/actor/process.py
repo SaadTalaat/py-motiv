@@ -1,7 +1,9 @@
+"""multiprocessing based actor and events"""
 
 import abc
-from ensure import ensure_annotations, ensure
+
 from multiprocessing import Process, Event
+from ensure import ensure_annotations, ensure
 
 from motiv.sync import SystemEvent
 from motiv.exceptions import ActorInitializationError
@@ -10,55 +12,101 @@ from motiv.streams import zeromq as zstreams
 
 
 class ProcessEvent(SystemEvent):
-
+    """Event synchronization primitive.
+    Wraps `multiprocessing.Event`
+    """
     def __init__(self, *args, **kwargs):
         self.event = Event(*args, **kwargs)
 
     def set(self):
+        """sets the event"""
         return self.event.set()
 
     def clear(self):
+        """clears the event"""
         return self.event.clear()
 
     def is_set(self):
+        """checks if the event is set
+
+        Returns:
+            bool: True if set, False if cleared
+        """
         return self.event.is_set()
+
 
 class ActorProcessBase(Process, abc.ABC):
 
+    """Mixin containing default behavior of an actor loop.
+
+    Args:
+        name(str): actor name
+
+    Attributes:
+        name(str): actor name
+    """
     def __init__(self, name: str):
         self.name = name
         self._halt = ProcessEvent()
         super().__init__(name=name)
 
     @abc.abstractmethod
-    def preStart(self):
-        pass
+    def pre_start(self):
+        """executes before starting an actor
+
+        Note:
+            this method runs in the actor child-process
+            meaning streams, channels, sockets initialized
+            in this function is owned by the actor process
+        """
 
     @abc.abstractmethod
-    def postStop(self):
-        pass
+    def post_stop(self):
+        """executes after the actor has stopped
+        close streams, sockets, descriptors in this function
+        """
 
     @abc.abstractmethod
     def tick(self):
-        pass
+        """actor tick handler
 
+        an actor tick is occurs on each event loop cycle.
+
+        Note:
+            this function should not be blocking. minimal
+            behavior is recommended, if it turns out to
+            be a complex function then consider breaking
+            the actor into two actors.
+        """
 
     def run(self):
-        self.preStart()
+        """actor process body"""
+        self.pre_start()
         while self.runnable:
             self.tick()
 
-        self.postStop()
+        self.post_stop()
 
     def stop(self):
+        """halts the actor"""
         return self._halt.set()
 
     @property
     def runnable(self):
+        """bool: True if actor hasn't been signaled to stop,False otherwise"""
         return not self._halt.is_set()
 
 
 class Actor(ActorProcessBase):
+    """Actual actor definition.
+
+    Args:
+        name(str): actor name.
+
+    Attributes:
+        name: actor name.
+        poller: stream poller.
+    """
 
     def __init__(self, name):
         self.name = name
@@ -69,79 +117,84 @@ class Actor(ActorProcessBase):
         self.poller = zchannels.Poller()
 
         # Properties
-        self._poll_interval = 5
+        self._poll_timeout = 5
 
     def proxy(self):
+        """The actor becomes a proxy"""
         if not(self.stream or (self.stream_in and self.stream_out)):
             raise ActorInitializationError("No streams set")
-        self.stream = self.stream or zstreams.CompoundStream(self.stream_in, self.stream_out)
+
+        if not self.stream:
+            self.stream = zstreams.CompoundStream(
+                self.stream_in, self.stream_out)
+
         return self.stream.run()
 
     def receive(self):
+        """polls input stream for data"""
         if not self.stream_in:
             raise ActorInitializationError("No in-stream set")
-        return self.stream_in.poll(self.poller, self._halt, self.poll_interval)
+        return self.stream_in.poll(self.poller, self._halt, self.poll_timeout)
 
     def send(self, payload):
+        """sends data over the output stream"""
         if not self.stream_out:
             raise ActorInitializationError("No out-stream set")
         return self.stream_out.send(payload)
 
     def publish(self, topic, payload):
+        """publishes data over the output stream"""
         ensure(self.stream_out).is_a(zstreams.Emitter)
         return self.stream_out.publish(topic, payload)
 
-
-    def setPollInterval(self, value):
-        self.poll_interval = value
-        return
-
-    ## Syntatic sugar
+    # Syntatic sugar
     def __add__(self, other):
-        if isinstance(other, zstreams.Sender) and isinstance(other, zstreams.Receiver):
+        if isinstance(other, zstreams.Sender) and \
+                isinstance(other, zstreams.Receiver):
             self.stream = other
-            return self
         elif isinstance(other, zstreams.Sender):
             self.stream_out = other
-            return self
         elif isinstance(other, zstreams.Receiver):
             self.stream_in = other
-            return self
         else:
             raise ValueError("Incompatible stream type")
 
-        return
+        return self
 
     @property
     def stream_in(self):
+        """actor input stream"""
         return self._stream_in
 
     @stream_in.setter
     @ensure_annotations
     def stream_in(self, value: zstreams.Receiver):
         if self.stream is not None:
-            raise ValueError("stream_in is set from stream, reset stream to overwrite")
+            raise ValueError("stream_in is set from stream,"
+                             " reset stream to overwrite")
         self._stream_in = value
-        return
 
     @property
     def stream_out(self):
+        """actor output stream"""
         return self._stream_out
 
     @stream_out.setter
     def stream_out(self, value: zstreams.Sender):
         if self.stream is not None:
-            raise ValueError("stream_out is set from stream, reset stream to overwrite")
+            raise ValueError("stream_out is set from stream,"
+                             " reset stream to overwrite")
         self._stream_out = value
-        return
 
     @property
     def stream(self):
+        """actor duplex stream, if exists"""
         return self._stream
 
     @stream.setter
     def stream(self, value):
-        if not(isinstance(value, zstreams.Sender) and isinstance(value, zstreams.Receiver)):
+        if not(isinstance(value, zstreams.Sender) and
+               isinstance(value, zstreams.Receiver)):
             raise ValueError("stream must be of type Sender AND Receiver")
 
         if self.stream_in is not None or self.stream_out is not None:
@@ -150,14 +203,13 @@ class Actor(ActorProcessBase):
         self._stream = value
         self.stream_in = value.stream_in
         self.stream_out = value.stream_out
-        return
 
     @property
-    def poll_interval(self):
-        return self._poll_interval
+    def poll_timeout(self):
+        """int: actor's poller poll timeout"""
+        return self._poll_timeout
 
-    @poll_interval.setter
-    def poll_interval(self, value):
+    @poll_timeout.setter
+    def poll_timeout(self, value):
         ensure(value).is_an(int)
-        self._poll_interval = value
-        return
+        self._poll_timeout = value

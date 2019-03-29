@@ -1,8 +1,9 @@
+"""0MQ related utilities"""
 
-import zmq
 
 def create_socket(ctx, socket_type):
-
+    """Creates zmq socket with default attributes
+    """
     sock = ctx.socket(socket_type)
     sock.linger = 1000
     sock.rcvtimeo = 1000
