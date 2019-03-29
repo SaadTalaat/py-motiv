@@ -1,11 +1,16 @@
+---
 dist: xenial
 language: python
 python:
   - "3.7"
 
+before_install:
+  - pip install nose nose-cov
+
 install:
-    - pip install --user -r requirements.txt
-    - python setup.py -q install
+  - pip install -r requirements.txt
+  - python setup.py -q install
+
 script:
-    - nosetests
-    - pylint motiv/
+  - nosetests
+  - pylint motiv/

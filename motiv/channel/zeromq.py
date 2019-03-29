@@ -1,3 +1,10 @@
+"""Channels implementation using 0MQ
+
+Todo:
+    * Check sockaddr format
+    *
+"""
+
 import os
 import zmq
 from ensure import ensure_annotations, ensure
