@@ -1,8 +1,8 @@
 
 from . import mixin
-from . import zmq
+from . import zeromq
 
 from .mixin import *
-from .zmq import *
+from .zeromq import *
 
-__all__ = ['mixin', 'zmq' ] + zmq.__all__ + mixin.__all__
+__all__ = ['mixin', 'zeromq' ] + zeromq.__all__ + mixin.__all__

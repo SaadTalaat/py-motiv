@@ -3,20 +3,20 @@ import zmq
 
 from ensure import ensure_annotations, ensure
 from motiv.streams import mixin
-from motiv.channel import ZMQChannel, ZMQChannelOut, ZMQChannelIn
+from motiv.channel import Channel, ChannelOut, ChannelIn
 
-class ZMQSender(mixin.Sender):
+class Sender(mixin.SenderType):
     pass
 
-class ZMQReceiver(mixin.Receiver):
+class Receiver(mixin.ReceiverType):
     pass
 
-class ZMQEmitter(mixin.Emitter, ZMQSender):
+class Emitter(mixin.EmitterType, Sender):
 
     def __init__(self, address: str, scheme: str):
         self.address = address
-        cout = ZMQChannelOut(zmq.PUB, scheme, address)
-        mixin.Emitter.__init__(self, cout)
+        cout = ChannelOut(zmq.PUB, scheme, address)
+        mixin.EmitterType.__init__(self, cout)
 
     def publish(self, topic, payload):
         t = bytes([topic])
@@ -25,13 +25,13 @@ class ZMQEmitter(mixin.Emitter, ZMQSender):
     def connect(self):
         self.channel_out.bind()
 
-class ZMQSubscriber(mixin.Subscriber, ZMQReceiver):
+class Subscriber(mixin.SubscriberType, Receiver):
 
     @ensure_annotations
     def __init__(self, address: str, scheme: str):
         self.address = address
-        cin = ZMQChannelIn(zmq.SUB, scheme, address)
-        mixin.Subscriber.__init__(self, cin)
+        cin = ChannelIn(zmq.SUB, scheme, address)
+        mixin.SubscriberType.__init__(self, cin)
 
     def subscribe(self, event_type: int):
         ensure(event_type).is_an(int)
@@ -41,56 +41,56 @@ class ZMQSubscriber(mixin.Subscriber, ZMQReceiver):
     def connect(self):
         self.channel_in.connect()
 
-class ZMQVentilator(mixin.Ventilator, ZMQSender):
+class Ventilator(mixin.VentilatorType, Sender):
 
     @ensure_annotations
     def __init__(self, address: str, scheme: str):
         self.address = address
-        cout = ZMQChannelOut(zmq.PUSH, scheme, address)
-        Ventilator.__init__(self, cout)
+        cout = ChannelOut(zmq.PUSH, scheme, address)
+        mixin.VentilatorType.__init__(self, cout)
 
     def connect(self):
         return self.channel_out.bind()
 
-class ZMQWorker(mixin.Worker, ZMQReceiver):
+class Worker(mixin.WorkerType, Receiver):
 
     @ensure_annotations
     def __init__(self, address: str, scheme: str):
         self.address = address
-        cin = ZMQChannelIn(zmq.PULL, scheme, address)
-        Worker.__init__(self, cin)
+        cin = ChannelIn(zmq.PULL, scheme, address)
+        mixin.WorkerType.__init__(self, cin)
 
     def connect(self):
         return self.channel_in.connect()
 
-class ZMQSink(mixin.Sink, ZMQReceiver):
+class Sink(mixin.SinkType, Receiver):
 
     @ensure_annotations
     def __init__(self, address: str, scheme: str):
         self.address = address
-        cin = ZMQChannelIn(zmq.PULL, scheme, address)
-        Worker.__init__(self, cin)
+        cin = ChannelIn(zmq.PULL, scheme, address)
+        mixin.SinkType.__init__(self, cin)
 
     def connect(self):
         return self.channel_in.bind()
 
-class ZMQCompoundStream(mixin.CompoundStream, ZMQSender, ZMQReceiver):
+class CompoundStream(mixin.CompoundStreamType, Sender, Receiver):
 
     @ensure_annotations
-    def __init__(self, stream_in: ZMQReceiver, stream_out: ZMQSender):
+    def __init__(self, stream_in: Receiver, stream_out: Sender):
         super().__init__(stream_in, stream_out)
-        self.channel = ZMQChannel(stream_in.channel_in, stream_out.channel_out)
+        self.channel = Channel(stream_in.channel_in, stream_out.channel_out)
 
     def run(self):
         self.channel.proxy()
 
 __all__ = [
-        'ZMQEmitter',
-        'ZMQSubscriber',
-        'ZMQVentilator',
-        'ZMQWorker',
-        'ZMQSink',
-        'ZMQCompoundStream',
-        'ZMQReceiver',
-        'ZMQSender'
+        'Emitter',
+        'Subscriber',
+        'Ventilator',
+        'Worker',
+        'Sink',
+        'CompoundStream',
+        'Receiver',
+        'Sender'
         ]

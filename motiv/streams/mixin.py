@@ -1,25 +1,25 @@
 
 import abc
 from ensure import ensure_annotations, ensure
-from motiv.channel import Channel, ChannelOut, ChannelIn
+from motiv.channel import ChannelOutType, ChannelInType
 
 
-class Sender(abc.ABC):
+class SenderType(abc.ABC):
 
     @abc.abstractmethod
     def send(self, payload):
         pass
 
-class Receiver(abc.ABC):
+class ReceiverType(abc.ABC):
 
     @abc.abstractmethod
     def receive(self):
         pass
 
-class Emitter(Sender):
+class EmitterType(SenderType):
 
-    def __init__(self, channel_out: ChannelOut):
-        ensure(channel_out).is_a(ChannelOut)
+    def __init__(self, channel_out: ChannelOutType):
+        ensure(channel_out).is_a(ChannelOutType)
         self.channel_out = channel_out
 
     @abc.abstractmethod
@@ -32,10 +32,10 @@ class Emitter(Sender):
     def close(self):
         return self.channel_out.close()
 
-class Subscriber(Receiver):
+class SubscriberType(ReceiverType):
 
-    def __init__(self, channel_in: ChannelIn):
-        ensure(channel_in).is_a(ChannelIn)
+    def __init__(self, channel_in: ChannelInType):
+        ensure(channel_in).is_a(ChannelInType)
         self.channel_in = channel_in
 
     @abc.abstractmethod
@@ -55,10 +55,10 @@ class Subscriber(Receiver):
     def close(self):
         return self.channel_in.close()
 
-class Ventilator(Sender):
+class VentilatorType(SenderType):
 
-    def __init__(self, channel_out: ChannelOut):
-        ensure(channel_out).is_a(ChannelOut)
+    def __init__(self, channel_out: ChannelOutType):
+        ensure(channel_out).is_a(ChannelOutType)
         self.channel_out = channel_out
 
     @abc.abstractmethod
@@ -71,10 +71,10 @@ class Ventilator(Sender):
     def close(self):
         return self.channel_out.close()
 
-class Worker(Receiver):
+class WorkerType(ReceiverType):
 
-    def __init__(self, channel_in: ChannelIn):
-        ensure(channel_in).is_a(ChannelIn)
+    def __init__(self, channel_in: ChannelInType):
+        ensure(channel_in).is_a(ChannelInType)
         self.channel_in = channel_in
 
     @abc.abstractmethod
@@ -91,10 +91,10 @@ class Worker(Receiver):
         return self.channel_in.close()
 
 
-class Sink(Receiver):
+class SinkType(ReceiverType):
 
-    def __init__(self, channel_in: ChannelIn):
-        ensure(channel_in).is_a(ChannelIn)
+    def __init__(self, channel_in: ChannelInType):
+        ensure(channel_in).is_a(ChannelInType)
         self.channel_in = channel_in
 
     @abc.abstractmethod
@@ -110,11 +110,11 @@ class Sink(Receiver):
     def close(self):
         return self.channel_in.close()
 
-class CompoundStream(Sender, Receiver):
+class CompoundStreamType(SenderType, ReceiverType):
 
-    def __init__(self, stream_in: Receiver, stream_out: Sender):
-        ensure(stream_in).is_a(Receiver)
-        ensure(stream_out).is_a(Sender)
+    def __init__(self, stream_in: ReceiverType, stream_out: SenderType):
+        ensure(stream_in).is_a(ReceiverType)
+        ensure(stream_out).is_a(SenderType)
         self.stream_in = stream_in
         self.stream_out = stream_out
 
@@ -133,10 +133,10 @@ class CompoundStream(Sender, Receiver):
 
 
 __all__ = [
-        'Emitter',
-        'Subscriber',
-        'Ventilator',
-        'Worker',
-        'Sink',
-        'CompoundStream',
+        'EmitterType',
+        'SubscriberType',
+        'VentilatorType',
+        'WorkerType',
+        'SinkType',
+        'CompoundStreamType',
         ]
