@@ -1,8 +1,9 @@
 import time
+import random
 import logging
 
 from motiv.actor.process import Ticker
-from motiv.streams import Emitter, Subscriber
+from motiv.streams import Ventilator, Worker
 
 
 def getLogger(name):
@@ -18,11 +19,11 @@ def getLogger(name):
     return logger
 
 
-publisher_stream = Emitter(address="/tmp/publisher", scheme="ipc")
-subscriber_stream = Subscriber(address="/tmp/publisher", scheme="ipc")
+vent_stream = Ventilator(address="/tmp/ventilator", scheme="ipc")
+worker_stream = Worker(address="/tmp/ventilator", scheme="ipc")
 
 
-class PublisherTicker(Ticker):
+class VentilatorTicker(Ticker):
 
     def pre_start(self):
         self.logger = getLogger(self.name)
@@ -33,36 +34,38 @@ class PublisherTicker(Ticker):
 
     def tick(self):
         time.sleep(2)
-        self.publish(1, b"Hello world")
+        batch_cnt = random.randint(1, 10)
+        for i in range(batch_cnt):
+            self.send(f"Work batch [{i}]".encode("utf-8"))
+
         print("\n")
-        self.logger.info("\tPublishing to subscribers")
+        self.logger.info(f"\t{batch_cnt} work batches sent")
 
 
-class SubscriberTicker(Ticker):
+class WorkerTicker(Ticker):
 
     def pre_start(self):
         self.logger = getLogger(self.name)
-        self.stream_in.subscribe(1)
         self.stream_in.connect()
 
     def post_stop(self):
         self.stream_in.close()
 
     def tick(self):
-        channel, payload = self.receive()
+        payload = self.receive()
         self.logger.info(f"\tReceived {payload}")
 
 
 if __name__ == '__main__':
 
-    pub = PublisherTicker("publisher[1]")
-    pub.set_stream(publisher_stream)
+    vent = VentilatorTicker("ventilator[1]")
+    vent.set_stream(vent_stream)
 
-    subscribers = []
-    for i in range(5):
-        subscriber = SubscriberTicker(f"subscriber[{i}]")
-        subscriber.set_stream(subscriber_stream)
-        subscribers.append(subscriber)
+    workers = []
+    for i in range(3):
+        worker = WorkerTicker(f"worker[{i}]")
+        worker.set_stream(worker_stream)
+        workers.append(worker)
 
-    pub.start()
-    [sub.start() for sub in subscribers]
+    vent.start()
+    [w.start() for w in workers]
