@@ -1,6 +1,7 @@
 """multiprocessing based actor and events"""
 
 import abc
+import signal
 
 from multiprocessing import Process, Event
 from ensure import ensure_annotations, ensure
@@ -50,6 +51,22 @@ class ExecutionContextBase(Process, abc.ABC):
         self._halt = ProcessEvent()
         super().__init__(name=name)
 
+    def __signal_handler(self, _signum, _frame):
+        self.stop()
+
+    def initialize_context(self):
+        """setups context environment
+
+        this function should not be overloaded
+        outside of the package.
+        """
+        # Setup signal handling.
+        signal.signal(signal.SIGABRT, self.__signal_handler)
+        signal.signal(signal.SIGTERM, self.__signal_handler)
+        signal.signal(signal.SIGCHLD, self.__signal_handler)
+        signal.signal(signal.SIGINT, self.__signal_handler)
+        signal.signal(signal.SIGILL, self.__signal_handler)
+
     @abc.abstractmethod
     def pre_start(self):
         """executes before starting an actor
@@ -64,19 +81,6 @@ class ExecutionContextBase(Process, abc.ABC):
     def post_stop(self):
         """executes after the actor has stopped
         close streams, sockets, descriptors in this function
-        """
-
-    @abc.abstractmethod
-    def tick(self):
-        """actor tick handler
-
-        an actor tick is occurs on each event loop cycle.
-
-        Note:
-            this function should not be blocking. minimal
-            behavior is recommended, if it turns out to
-            be a complex function then consider breaking
-            the actor into two actors.
         """
 
     def stop(self):
@@ -200,12 +204,31 @@ class ExecutionContext(ExecutionContextBase):
 
 
 class Ticker(ExecutionContext):
+    """event-loop ticker"""
+
+    @abc.abstractmethod
+    def tick(self):
+        """actor tick handler
+
+        an actor tick is occurs on each event loop cycle.
+
+        Note:
+            this function should not be blocking. minimal
+            behavior is recommended, if it turns out to
+            be a complex function then consider breaking
+            the actor into two actors.
+        """
 
     def run(self):
         """actor process body"""
+        self.initialize_context()
         self.pre_start()
         while self.runnable:
-            self.tick()
+            try:
+                self.tick()
+            except Exception:
+                self.post_stop()
+                raise
 
         self.post_stop()
 
@@ -226,6 +249,7 @@ class Proxy(ExecutionContext):
 
     def run(self):
         """actor process body"""
+        self.initialize_context()
         self.pre_start()
         self.proxy()
         self.post_stop()
