@@ -30,6 +30,7 @@ class VentilatorTicker(Ticker):
         self.stream_out.connect()
 
     def post_stop(self):
+        self.logger.info("Stopping..")
         self.stream_out.close()
 
     def tick(self):
@@ -49,6 +50,7 @@ class WorkerTicker(Ticker):
         self.stream_in.connect()
 
     def post_stop(self):
+        self.logger.info("Stopping..")
         self.stream_in.close()
 
     def tick(self):
@@ -58,7 +60,7 @@ class WorkerTicker(Ticker):
 
 if __name__ == '__main__':
 
-    vent = VentilatorTicker("ventilator[1]")
+    vent = VentilatorTicker("ventilator[0]")
     vent.set_stream(vent_stream)
 
     workers = []
