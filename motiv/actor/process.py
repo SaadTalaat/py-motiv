@@ -35,7 +35,7 @@ class ProcessEvent(SystemEvent):
         return self.event.is_set()
 
 
-class ActorProcessBase(Process, abc.ABC):
+class ExecutionContextBase(Process, abc.ABC):
 
     """Mixin containing default behavior of an actor loop.
 
@@ -79,14 +79,6 @@ class ActorProcessBase(Process, abc.ABC):
             the actor into two actors.
         """
 
-    def run(self):
-        """actor process body"""
-        self.pre_start()
-        while self.runnable:
-            self.tick()
-
-        self.post_stop()
-
     def stop(self):
         """halts the actor"""
         return self._halt.set()
@@ -97,7 +89,7 @@ class ActorProcessBase(Process, abc.ABC):
         return not self._halt.is_set()
 
 
-class Actor(ActorProcessBase):
+class ExecutionContext(ExecutionContextBase):
     """Actual actor definition.
 
     Args:
@@ -119,17 +111,6 @@ class Actor(ActorProcessBase):
         # Properties
         self._poll_timeout = 5
 
-    def proxy(self):
-        """The actor becomes a proxy"""
-        if not(self.stream or (self.stream_in and self.stream_out)):
-            raise ActorInitializationError("No streams set")
-
-        if not self.stream:
-            self.stream = zstreams.CompoundStream(
-                self.stream_in, self.stream_out)
-
-        return self.stream.run()
-
     def receive(self):
         """polls input stream for data"""
         if not self.stream_in:
@@ -147,19 +128,22 @@ class Actor(ActorProcessBase):
         ensure(self.stream_out).is_a(zstreams.Emitter)
         return self.stream_out.publish(topic, payload)
 
-    # Syntatic sugar
-    def __add__(self, other):
-        if isinstance(other, zstreams.Sender) and \
-                isinstance(other, zstreams.Receiver):
-            self.stream = other
-        elif isinstance(other, zstreams.Sender):
-            self.stream_out = other
-        elif isinstance(other, zstreams.Receiver):
-            self.stream_in = other
+    @abc.abstractmethod
+    def run(self):
+        """process body"""
+
+    @ensure_annotations
+    def set_stream(self, stream):
+        """assigns a given stream to out-stream, in-stream."""
+        if isinstance(stream, zstreams.Sender) and \
+                isinstance(stream, zstreams.Receiver):
+            self.stream = stream
+        elif isinstance(stream, zstreams.Sender):
+            self.stream_out = stream
+        elif isinstance(stream, zstreams.Receiver):
+            self.stream_in = stream
         else:
             raise ValueError("Incompatible stream type")
-
-        return self
 
     @property
     def stream_in(self):
@@ -213,3 +197,35 @@ class Actor(ActorProcessBase):
     def poll_timeout(self, value):
         ensure(value).is_an(int)
         self._poll_timeout = value
+
+
+class Ticker(ExecutionContext):
+
+    def run(self):
+        """actor process body"""
+        self.pre_start()
+        while self.runnable:
+            self.tick()
+
+        self.post_stop()
+
+
+class Proxy(ExecutionContext):
+    """Stream proxy actor"""
+
+    def proxy(self):
+        """The actor becomes a proxy"""
+        if not(self.stream or (self.stream_in and self.stream_out)):
+            raise ActorInitializationError("No streams set")
+
+        if not self.stream:
+            self.stream = zstreams.CompoundStream(
+                self.stream_in, self.stream_out)
+
+        return self.stream.run()
+
+    def run(self):
+        """actor process body"""
+        self.pre_start()
+        self.proxy()
+        self.post_stop()
