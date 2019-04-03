@@ -315,7 +315,7 @@ class TestCompoundStream(unittest.TestCase):
     def test_stream_behavior(self):
         self.emitter.publish(1, b"foo")
         # Yield GIL to proxy
-        time.sleep(0.01)
+        time.sleep(0.1)
         channel, payload = self.worker.receive()
         self.assertEqual(payload, b"foo")
         self.assertEqual(channel, bytes([1]))
