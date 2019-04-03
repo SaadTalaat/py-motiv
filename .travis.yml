@@ -18,7 +18,7 @@ jobs:
     - stage: test
       script:
         - nosetests --with-coverage --cover-package=motiv
-        - coverage report
+        - coverage report --omit=motiv/tests/*,motiv/version.py
         - codecov
 
 stages:
