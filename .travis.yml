@@ -16,11 +16,10 @@ jobs:
     - stage: lint
       script: pylint motiv/
     - stage: test
-      script: nosetests --with-coverage --cover-package=motiv
-    - stage: coverage
-      script: coverage report
+      script:
+        - nosetests --with-coverage --cover-package=motiv
+        - coverage report
 
 stages:
   - lint
   - test
-  - coverage
