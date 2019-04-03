@@ -40,7 +40,7 @@ setup(
     author="Saad Talaat",
     author_email="saadtalaat@gmail.com",
     url="https://saadtalaat.com",
-    packages=find_packages(exclude=["*test*"]),
+    packages=find_packages(exclude=["*test*", "examples"]),
     zip_safe=False,
     install_requires= INSTALL_REQUIRES,
     dependency_links = DEP_LINKS,

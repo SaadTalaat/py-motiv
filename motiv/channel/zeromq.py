@@ -75,7 +75,16 @@ class ChannelOut(ChannelOutType):
             payload = body.serialize()
             result = self._send_multipart([payload])
         elif isinstance(body, (list, tuple)):
-            result = self._send_multipart(body)
+            frames = []
+            for frame in body:
+                if isinstance(frame, bytes):
+                    frames.append(frame)
+                elif isinstance(frame, Serializable):
+                    frames.append(frame.serialize())
+                else:
+                    raise TypeError("Frames must be of type bytes"
+                                    " or a serializable class")
+            result = self._send_multipart(frames)
         else:
             raise TypeError("body is not a buffer type (bytes, list, tuple)")
         return result
@@ -239,10 +248,8 @@ class Poller(zmq.Poller):
         """
         if isinstance(channel, ChannelIn):
             self.register(channel.sock_in, zmq.POLLIN)
-        elif isinstance(channel, ChannelOut):
+        if isinstance(channel, ChannelOut):
             self.register(channel.sock_out, zmq.POLLOUT)
-        else:
-            raise RuntimeError("Unknown error")
 
     @ensure_annotations
     def unregister_channel(self, channel: (ChannelIn, ChannelOut)):
@@ -253,10 +260,8 @@ class Poller(zmq.Poller):
         """
         if isinstance(channel, ChannelIn):
             self.unregister(channel.sock_in)
-        elif isinstance(channel, ChannelOut):
+        if isinstance(channel, ChannelOut):
             self.unregister(channel.sock_out)
-        else:
-            raise RuntimeError("Unknown error")
 
 
 __all__ = [
