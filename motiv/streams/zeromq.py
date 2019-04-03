@@ -27,8 +27,7 @@ class Emitter(mixin.EmitterType, Sender):
     """
     def __init__(self, address: str, scheme: str):
         self.address = address
-        cout = ChannelOut(zmq.PUB, scheme, address)
-        mixin.EmitterType.__init__(self, cout)
+        self._cout = ChannelOut(zmq.PUB, scheme, address)
 
     def publish(self, topic, payload):
         """Publishes data over a topic
@@ -44,6 +43,10 @@ class Emitter(mixin.EmitterType, Sender):
         """establish connection"""
         self.channel_out.bind()
 
+    @property
+    def channel_out(self):
+        """output channel (readonly)"""
+        return self._cout
 
 class Subscriber(mixin.SubscriberType, Receiver):
 

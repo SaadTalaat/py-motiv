@@ -10,6 +10,7 @@ from ensure import ensure_annotations, ensure
 
 from motiv.exceptions import AlreadyConnected, NotConnected
 from motiv.sync import SystemEvent
+from motiv.serde import Serializable
 from motiv.channel.mixin import ChannelType, ChannelInType, ChannelOutType
 from motiv.proto.zeromq import create_socket
 
@@ -70,6 +71,9 @@ class ChannelOut(ChannelOutType):
         result = None
         if isinstance(body, bytes):
             result = self._send_multipart([body])
+        elif isinstance(body, Serializable):
+            payload = body.serialize()
+            result = self._send_multipart([payload])
         elif isinstance(body, (list, tuple)):
             result = self._send_multipart(body)
         else:

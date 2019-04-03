@@ -1,6 +1,7 @@
 """multiprocessing based actor and events"""
 
 import abc
+import signal
 
 from multiprocessing import Process, Event
 from ensure import ensure_annotations, ensure
@@ -35,7 +36,7 @@ class ProcessEvent(SystemEvent):
         return self.event.is_set()
 
 
-class ActorProcessBase(Process, abc.ABC):
+class ExecutionContextBase(Process, abc.ABC):
 
     """Mixin containing default behavior of an actor loop.
 
@@ -49,6 +50,22 @@ class ActorProcessBase(Process, abc.ABC):
         self.name = name
         self._halt = ProcessEvent()
         super().__init__(name=name)
+
+    def __signal_handler(self, _signum, _frame):
+        self.stop()
+
+    def initialize_context(self):
+        """setups context environment
+
+        this function should not be overloaded
+        outside of the package.
+        """
+        # Setup signal handling.
+        signal.signal(signal.SIGABRT, self.__signal_handler)
+        signal.signal(signal.SIGTERM, self.__signal_handler)
+        signal.signal(signal.SIGCHLD, self.__signal_handler)
+        signal.signal(signal.SIGINT, self.__signal_handler)
+        signal.signal(signal.SIGILL, self.__signal_handler)
 
     @abc.abstractmethod
     def pre_start(self):
@@ -66,27 +83,6 @@ class ActorProcessBase(Process, abc.ABC):
         close streams, sockets, descriptors in this function
         """
 
-    @abc.abstractmethod
-    def tick(self):
-        """actor tick handler
-
-        an actor tick is occurs on each event loop cycle.
-
-        Note:
-            this function should not be blocking. minimal
-            behavior is recommended, if it turns out to
-            be a complex function then consider breaking
-            the actor into two actors.
-        """
-
-    def run(self):
-        """actor process body"""
-        self.pre_start()
-        while self.runnable:
-            self.tick()
-
-        self.post_stop()
-
     def stop(self):
         """halts the actor"""
         return self._halt.set()
@@ -97,7 +93,7 @@ class ActorProcessBase(Process, abc.ABC):
         return not self._halt.is_set()
 
 
-class Actor(ActorProcessBase):
+class ExecutionContext(ExecutionContextBase):
     """Actual actor definition.
 
     Args:
@@ -119,17 +115,6 @@ class Actor(ActorProcessBase):
         # Properties
         self._poll_timeout = 5
 
-    def proxy(self):
-        """The actor becomes a proxy"""
-        if not(self.stream or (self.stream_in and self.stream_out)):
-            raise ActorInitializationError("No streams set")
-
-        if not self.stream:
-            self.stream = zstreams.CompoundStream(
-                self.stream_in, self.stream_out)
-
-        return self.stream.run()
-
     def receive(self):
         """polls input stream for data"""
         if not self.stream_in:
@@ -147,19 +132,22 @@ class Actor(ActorProcessBase):
         ensure(self.stream_out).is_a(zstreams.Emitter)
         return self.stream_out.publish(topic, payload)
 
-    # Syntatic sugar
-    def __add__(self, other):
-        if isinstance(other, zstreams.Sender) and \
-                isinstance(other, zstreams.Receiver):
-            self.stream = other
-        elif isinstance(other, zstreams.Sender):
-            self.stream_out = other
-        elif isinstance(other, zstreams.Receiver):
-            self.stream_in = other
+    @abc.abstractmethod
+    def run(self):
+        """process body"""
+
+    @ensure_annotations
+    def set_stream(self, stream):
+        """assigns a given stream to out-stream, in-stream."""
+        if isinstance(stream, zstreams.Sender) and \
+                isinstance(stream, zstreams.Receiver):
+            self.stream = stream
+        elif isinstance(stream, zstreams.Sender):
+            self.stream_out = stream
+        elif isinstance(stream, zstreams.Receiver):
+            self.stream_in = stream
         else:
             raise ValueError("Incompatible stream type")
-
-        return self
 
     @property
     def stream_in(self):
@@ -213,3 +201,55 @@ class Actor(ActorProcessBase):
     def poll_timeout(self, value):
         ensure(value).is_an(int)
         self._poll_timeout = value
+
+
+class Ticker(ExecutionContext):
+    """event-loop ticker"""
+
+    @abc.abstractmethod
+    def tick(self):
+        """actor tick handler
+
+        an actor tick is occurs on each event loop cycle.
+
+        Note:
+            this function should not be blocking. minimal
+            behavior is recommended, if it turns out to
+            be a complex function then consider breaking
+            the actor into two actors.
+        """
+
+    def run(self):
+        """actor process body"""
+        self.initialize_context()
+        self.pre_start()
+        while self.runnable:
+            try:
+                self.tick()
+            except Exception:
+                self.post_stop()
+                raise
+
+        self.post_stop()
+
+
+class Proxy(ExecutionContext):
+    """Stream proxy actor"""
+
+    def proxy(self):
+        """The actor becomes a proxy"""
+        if not(self.stream or (self.stream_in and self.stream_out)):
+            raise ActorInitializationError("No streams set")
+
+        if not self.stream:
+            self.stream = zstreams.CompoundStream(
+                self.stream_in, self.stream_out)
+
+        return self.stream.run()
+
+    def run(self):
+        """actor process body"""
+        self.initialize_context()
+        self.pre_start()
+        self.proxy()
+        self.post_stop()
