@@ -184,10 +184,12 @@ class CompoundStream(mixin.CompoundStreamType, Sender, Receiver):
 
     @property
     def stream_in(self):
+        """output stream"""
         return self._stream_in
 
     @property
     def stream_out(self):
+        """input stream"""
         return self._stream_out
 
 
