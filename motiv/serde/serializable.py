@@ -11,6 +11,7 @@ class Serializable(abc.ABC):
     def serialize(self):
         """returns encoded object"""
 
+    @classmethod
     @abc.abstractmethod
-    def deserialize(self):
+    def deserialize(self, payload):
         """decodes an object into an instance"""

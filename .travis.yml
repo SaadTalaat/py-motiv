@@ -11,13 +11,16 @@ install:
 before_script:
   - pip install nose nose-cov pylint
 
-script:
-  - nosetests
-
 jobs:
   include:
     - stage: lint
       script: pylint motiv/
+    - stage: test
+      script: nosetests --with-coverage --cover-package=motiv
+    - stage: coverage
+      script: coverage report
 
 stages:
   - lint
+  - test
+  - coverage
