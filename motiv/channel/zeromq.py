@@ -239,10 +239,8 @@ class Poller(zmq.Poller):
         """
         if isinstance(channel, ChannelIn):
             self.register(channel.sock_in, zmq.POLLIN)
-        elif isinstance(channel, ChannelOut):
+        if isinstance(channel, ChannelOut):
             self.register(channel.sock_out, zmq.POLLOUT)
-        else:
-            raise RuntimeError("Unknown error")
 
     @ensure_annotations
     def unregister_channel(self, channel: (ChannelIn, ChannelOut)):
@@ -253,10 +251,8 @@ class Poller(zmq.Poller):
         """
         if isinstance(channel, ChannelIn):
             self.unregister(channel.sock_in)
-        elif isinstance(channel, ChannelOut):
+        if isinstance(channel, ChannelOut):
             self.unregister(channel.sock_out)
-        else:
-            raise RuntimeError("Unknown error")
 
 
 __all__ = [
