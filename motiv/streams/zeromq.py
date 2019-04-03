@@ -146,7 +146,7 @@ class Sink(mixin.SinkType, Receiver):
         return self.channel_in.bind()
 
     @property
-    def channe_in(self):
+    def channel_in(self):
         """input channel (readonly)"""
         return self._cin
 
@@ -164,7 +164,8 @@ class CompoundStream(mixin.CompoundStreamType, Sender, Receiver):
 
     @ensure_annotations
     def __init__(self, stream_in: Receiver, stream_out: Sender):
-        super().__init__(stream_in, stream_out)
+        self._stream_in = stream_in
+        self._stream_out = stream_out
         self.channel = Channel(stream_in.channel_in, stream_out.channel_out)
 
     def run(self):
@@ -180,6 +181,14 @@ class CompoundStream(mixin.CompoundStreamType, Sender, Receiver):
     def channel_out(self):
         """output channel"""
         return self.channel
+
+    @property
+    def stream_in(self):
+        return self._stream_in
+
+    @property
+    def stream_out(self):
+        return self._stream_out
 
 
 __all__ = [
