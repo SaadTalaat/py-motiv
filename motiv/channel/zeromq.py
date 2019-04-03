@@ -75,7 +75,16 @@ class ChannelOut(ChannelOutType):
             payload = body.serialize()
             result = self._send_multipart([payload])
         elif isinstance(body, (list, tuple)):
-            result = self._send_multipart(body)
+            frames = []
+            for frame in body:
+                if isinstance(frame, bytes):
+                    frames.append(frame)
+                elif isinstance(frame, Serializable):
+                    frames.append(frame.serialize())
+                else:
+                    raise TypeError("Frames must be of type bytes"
+                                    " or a serializable class")
+            result = self._send_multipart(frames)
         else:
             raise TypeError("body is not a buffer type (bytes, list, tuple)")
         return result
