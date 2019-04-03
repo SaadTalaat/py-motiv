@@ -9,7 +9,7 @@ install:
   - python setup.py -q install
 
 before_script:
-  - pip install nose nose-cov pylint
+  - pip install nose nose-cov pylint codecov
 
 jobs:
   include:
@@ -19,6 +19,7 @@ jobs:
       script:
         - nosetests --with-coverage --cover-package=motiv
         - coverage report
+        - codecov
 
 stages:
   - lint
