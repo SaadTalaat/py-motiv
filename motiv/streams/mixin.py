@@ -10,7 +10,7 @@ import abc
 class SenderType(abc.ABC):
     """Sender stream type"""
     @abc.abstractmethod
-    def send(self, payload):
+    def send(self, payload, sync):
         """abstract send method"""
 
 
@@ -28,13 +28,13 @@ class EmitterType(SenderType):
     def connect(self):
         """abstract connect method"""
 
-    def send(self, payload):
+    def send(self, payload, sync=True):
         """sends a payload over underlying channel
 
         Args:
             payload: data to send over the channel
         """
-        return self.channel_out.send(payload)
+        return self.channel_out.send(payload, sync)
 
     def close(self):
         """closes underlying channel"""
@@ -86,13 +86,13 @@ class VentilatorType(SenderType):
     def connect(self):
         """abstract connect method"""
 
-    def send(self, body):
+    def send(self, body, sync=True):
         """sends a payload over underlying channel
 
         Args:
             payload: data to send over the channel
         """
-        self.channel_out.send(body)
+        self.channel_out.send(body, sync)
 
     def close(self):
         """closes underlying channel"""
@@ -156,13 +156,13 @@ class SinkType(ReceiverType):
 
 class CompoundStreamType(SenderType, ReceiverType):
     """A type of two merged streams, ideally sender and receiver stream"""
-    def send(self, payload):
+    def send(self, payload, sync=True):
         """sends a payload over underlying channel
 
         Args:
             payload: data to send over the channel
         """
-        self.stream_out.send(payload)
+        self.stream_out.send(payload, sync)
 
     def receive(self):
         """block on the input channel for received data"""

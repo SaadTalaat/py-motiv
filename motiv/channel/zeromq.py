@@ -56,10 +56,12 @@ class ChannelOut(ChannelOutType):
         self.sock_out.connect(self.address_out)
         self.sock_connected = True
 
-    def _send_multipart(self, body: list):
-        return self.sock_out.send_multipart(body)
+    def _send_multipart(self, body: list, sync: bool):
+        flags = 0x0
+        flags |= 0 if sync else zmq.NOBLOCK
+        return self.sock_out.send_multipart(body, flags=flags)
 
-    def send(self, body):
+    def send(self, body, sync=True):
         """sends streamed payload over the channel.
 
         Args:
@@ -70,10 +72,10 @@ class ChannelOut(ChannelOutType):
 
         result = None
         if isinstance(body, bytes):
-            result = self._send_multipart([body])
+            result = self._send_multipart([body], sync)
         elif isinstance(body, Serializable):
             payload = body.serialize()
-            result = self._send_multipart([payload])
+            result = self._send_multipart([payload], sync)
         elif isinstance(body, (list, tuple)):
             frames = []
             for frame in body:
@@ -84,7 +86,7 @@ class ChannelOut(ChannelOutType):
                 else:
                     raise TypeError("Frames must be of type bytes"
                                     " or a serializable class")
-            result = self._send_multipart(frames)
+            result = self._send_multipart(frames, sync)
         else:
             raise TypeError("body is not a buffer type (bytes, list, tuple)")
         return result
@@ -219,9 +221,9 @@ class Channel(ChannelType):
         zmq.proxy(self.cin.sock_in, self.cout.sock_out)
         self.close()
 
-    def send(self, body):
+    def send(self, body, sync=True):
         """Sends a payload over the output channel"""
-        return self.cout.send(body)
+        return self.cout.send(body, sync)
 
     def receive(self):
         """blocks to receive data over input channel"""

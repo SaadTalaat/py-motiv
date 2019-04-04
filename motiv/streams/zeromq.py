@@ -29,7 +29,7 @@ class Emitter(mixin.EmitterType, Sender):
         self.address = address
         self._cout = ChannelOut(zmq.PUB, scheme, address)
 
-    def publish(self, topic, payload):
+    def publish(self, topic, payload, sync=True):
         """Publishes data over a topic
 
         Args:
@@ -37,7 +37,7 @@ class Emitter(mixin.EmitterType, Sender):
             payload: data to publish
         """
         _topic = bytes([topic])
-        return self.send([_topic, payload])
+        return self.send([_topic, payload], sync)
 
     def connect(self):
         """establish connection"""
