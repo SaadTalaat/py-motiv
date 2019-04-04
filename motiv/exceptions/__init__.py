@@ -13,3 +13,11 @@ class AlreadyConnected(Exception):
 
 class NotConnected(Exception):
     """Exception to denote that a channel isn't connected"""
+
+
+class ScalingError(Exception):
+    """Exception to indicate an error encountered whiel scaling group"""
+
+
+class DispatchError(Exception):
+    """Exception to denote issue to dispatch, stop an actor"""
