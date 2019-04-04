@@ -43,7 +43,16 @@ An execution pattern defines how a component should execute, for example, a comp
 
 An execution pattern or an actor expects to have an input stream or output stream or both for it to be runnable.
 
+## Examples
 See examples: [motiv/examples/](https://github.com/SaadTalaat/motiv/tree/master/motiv/examples)
 
+Run examples,
+```bash
+$ git clone git@github.com:SaadTalaat/motiv.git
+$ cd motiv
+$ python3 motiv/examples/workers.py
+....
+$ python3 motiv/examples/pubsub.py
+```
 ## Disclaimer
 Motiv is still in development, master might not be stable, features will be rolled out fast. I encourage you to fix any code you see wrong, raise any issues that concern you and actively participate in developing *Motiv*.
