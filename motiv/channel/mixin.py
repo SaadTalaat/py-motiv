@@ -13,7 +13,7 @@ class ChannelOutType(abc.ABC):
     """Abstract class for output channels"""
 
     @abc.abstractmethod
-    def send(self, body):
+    def send(self, body, sync=True):
         "abstract send method"
 
     @abc.abstractmethod

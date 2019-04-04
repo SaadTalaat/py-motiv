@@ -143,20 +143,18 @@ class TestChannelIn(unittest.TestCase):
         chan.bind()
         pollr = zchan.Poller()
         exit_condition = ProcessEvent()
-        pool = ThreadPoolExecutor(max_workers=1)
 
         def send_something():
             chan = zchan.ChannelOut(zmq.PUSH,
                     "ipc", "/tmp/test_bind_twice_in")
             chan.connect()
-            chan.send(b"something")
+            chan.send(b"something", sync=False)
 
+        send_something()
         # set condition to immediately exit event loop
-        pool.submit(send_something)
         self.assertEqual(len(pollr.sockets), 0)
         chan.poll(pollr, exit_condition)
         self.assertEqual(len(pollr.sockets), 1)
-        pool.shutdown()
 
     def test_bind_twice(self):
         chan = zchan.ChannelIn(zmq.PULL,
@@ -219,20 +217,18 @@ class TestChannel(unittest.TestCase):
     def test_poll(self):
         pollr = zchan.Poller()
         exit_condition = ProcessEvent()
-        pool = ThreadPoolExecutor(max_workers=1)
 
         def send_something():
             chan = zchan.ChannelOut(zmq.PUSH,
                     "ipc", "/tmp/test_channel_socket_in")
             chan.connect()
-            chan.send(b"something")
+            chan.send(b"something", sync=False)
 
+        send_something()
         # set condition to immediately exit event loop
-        pool.submit(send_something)
         self.assertEqual(len(pollr.sockets), 0)
         self.chan.poll(pollr, exit_condition)
         self.assertEqual(len(pollr.sockets), 1)
-        pool.shutdown()
 
     def test_proxy_not_connected(self):
         cin = zchan.ChannelIn(zmq.PULL,

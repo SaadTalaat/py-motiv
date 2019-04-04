@@ -1,5 +1,6 @@
 import unittest
 import time
+import random
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -286,11 +287,12 @@ class TestCompoundStream(unittest.TestCase):
 
     def setUp(self):
         # Ventilating subscriber
+        rint = random.randint(1, 100)
         self.emitter = zstreams.Emitter("/tmp/vent_sub_test", "ipc")
-        subscriber = zstreams.Subscriber("/tmp/vent_sub_test", "ipc")
-        ventilator = zstreams.Ventilator("/tmp/vent_sub_test_out", "ipc")
-        self.vent_sub = zstreams.CompoundStream(subscriber, ventilator)
-        self.worker = zstreams.Worker("/tmp/vent_sub_test_out", "ipc")
+        sub = zstreams.Subscriber(f"/tmp/vent_sub_test", "ipc")
+        vent = zstreams.Ventilator(f"/tmp/vent_sub_test_out_{rint}", "ipc")
+        self.vent_sub = zstreams.CompoundStream(sub, vent)
+        self.worker = zstreams.Worker(f"/tmp/vent_sub_test_out_{rint}", "ipc")
 
         def run_proxy():
             self.vent_sub.stream_in.subscribe(1)
@@ -315,7 +317,6 @@ class TestCompoundStream(unittest.TestCase):
     def test_stream_behavior(self):
         self.emitter.publish(1, b"foo")
         # Yield GIL to proxy
-        time.sleep(0.1)
         channel, payload = self.worker.receive()
         self.assertEqual(payload, b"foo")
         self.assertEqual(channel, bytes([1]))
