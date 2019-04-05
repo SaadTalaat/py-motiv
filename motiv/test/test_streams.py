@@ -224,13 +224,13 @@ class TestSink(unittest.TestCase):
         self.vent = zstreams.Ventilator("/tmp/vent_test", "ipc")
         self.sink = zstreams.Sink("/tmp/sink_test", "ipc")
         worker = zstreams.Worker("/tmp/vent_test", "ipc")
-        worker_vent = zstreams.Ventilator("/tmp/sink_test", "ipc")
-        self.worker = zstreams.CompoundStream(worker, worker_vent)
+        worker_pushr = zstreams.Pusher("/tmp/sink_test", "ipc")
+        self.worker = zstreams.CompoundStream(worker, worker_pushr)
 
         def run_proxy():
             self.worker.stream_in.connect()
             # TODO: Make special stream type for pusher streams
-            self.worker.stream_out.channel_out.connect()
+            self.worker.stream_out.connect()
             self.worker.run()
 
         self.vent.connect()

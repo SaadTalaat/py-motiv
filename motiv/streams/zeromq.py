@@ -23,7 +23,7 @@ class Emitter(mixin.EmitterType, Sender):
 
     Args:
         address(str): address to connect to (e.g. /tmp/socket).
-        scheme(str): transfer protocol (e.g. ipc, inproc, unix)
+        scheme(str): transfer protocol (e.g. ipc, inproc)
     """
     def __init__(self, address: str, scheme: str):
         self.address = address
@@ -54,7 +54,7 @@ class Subscriber(mixin.SubscriberType, Receiver):
 
     Args:
         address(str): address to connect to (e.g. /tmp/socket).
-        scheme(str): transfer protocol (e.g. ipc, inproc, unix)
+        scheme(str): transfer protocol (e.g. ipc, inproc)
     """
 
     @ensure_annotations
@@ -88,7 +88,7 @@ class Ventilator(mixin.VentilatorType, Sender):
 
     Args:
         address(str): address to connect to (e.g. /tmp/socket).
-        scheme(str): transfer protocol (e.g. ipc, inproc, unix)
+        scheme(str): transfer protocol (e.g. ipc, inproc)
     """
     @ensure_annotations
     def __init__(self, address: str, scheme: str):
@@ -110,7 +110,7 @@ class Worker(mixin.WorkerType, Receiver):
 
     Args:
         address(str): address to connect to (e.g. /tmp/socket).
-        scheme(str): transfer protocol (e.g. ipc, inproc, unix)
+        scheme(str): transfer protocol (e.g. ipc, inproc)
     """
 
     @ensure_annotations
@@ -128,12 +128,33 @@ class Worker(mixin.WorkerType, Receiver):
         return self._cin
 
 
+class Pusher(mixin.PusherType, Sender):
+    """ZMQ Pusher
+
+    Args:
+        address(str): address to connect to (e.g. /tmp/socket)
+        scheme(str): transfer protocol (e.g. ipc, inproc)"""
+    @ensure_annotations
+    def __init__(self, address: str, scheme: str):
+        self.address = address
+        self._cout = ChannelOut(zmq.PUSH, scheme, address)
+
+    def connect(self):
+        """establish connection"""
+        return self.channel_out.connect()
+
+    @property
+    def channel_out(self):
+        """output channel (readonly)"""
+        return self._cout
+
+
 class Sink(mixin.SinkType, Receiver):
     """ZMQ Sink
 
     Args:
         address(str): address to connect to (e.g. /tmp/socket).
-        scheme(str): transfer protocol (e.g. ipc, inproc, unix)
+        scheme(str): transfer protocol (e.g. ipc, inproc)
     """
 
     @ensure_annotations

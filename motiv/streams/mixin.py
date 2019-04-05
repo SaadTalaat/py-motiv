@@ -128,6 +128,30 @@ class WorkerType(ReceiverType):
     def channel_in(self):
         """input channel"""
 
+class PusherType(SenderType):
+    """pushes data into a pulling stream (sink)"""
+
+    @abc.abstractmethod
+    def connect(self):
+        """abstract connect method"""
+
+    def send(self, body, sync=True):
+        """sends a payload over underlying channel
+
+        Args:
+            payload: data to send over the channel
+        """
+        self.channel_out.send(body, sync)
+
+    def close(self):
+        """closes underlying channel"""
+        return self.channel_out.close()
+
+    @property
+    @abc.abstractmethod
+    def channel_out(self):
+        """output channel"""
+
 
 class SinkType(ReceiverType):
     """Sink stream abstract class"""
