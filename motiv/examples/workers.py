@@ -19,8 +19,8 @@ def getLogger(name):
     return logger
 
 
-vent_stream = Ventilator(address="/tmp/ventilator", scheme="ipc")
-worker_stream = Worker(address="/tmp/ventilator", scheme="ipc")
+vent_stream = Ventilator(address="ipc:///tmp/ventilator")
+worker_stream = Worker(address="ipc:///tmp/ventilator")
 
 
 class VentilatorTicker(Ticker):

@@ -15,7 +15,7 @@ from motiv.test.fixtures import msg
 class TestEmitter(unittest.TestCase):
 
     def setUp(self):
-        self.emitter = zstreams.Emitter("/tmp/emitter_test", "ipc")
+        self.emitter = zstreams.Emitter("ipc:///tmp/emitter_test")
         self.emitter.connect()
 
     def tearDown(self):
@@ -29,7 +29,7 @@ class TestEmitter(unittest.TestCase):
         self.assertFalse(issubclass(zstreams.Emitter, zstreams.Receiver))
 
     def test_send_before_connecting(self):
-        emitter = zstreams.Emitter("/tmp/emitter_test_doesnt_exist", "ipc")
+        emitter = zstreams.Emitter("ipc:///tmp/emitter_test_doesnt_exist")
         with self.assertRaises(excs.NotConnected):
             emitter.send("foo")
 
@@ -50,7 +50,7 @@ class TestEmitter(unittest.TestCase):
         self.emitter.send(m)
 
     def test_publish_before_connecting(self):
-        emitter = zstreams.Emitter("/tmp/emitter_test_doesnt_exist", "ipc")
+        emitter = zstreams.Emitter("ipc:///tmp/emitter_test_doesnt_exist")
         with self.assertRaises(excs.NotConnected):
             emitter.publish(1, b"foo")
 
@@ -77,8 +77,8 @@ class TestEmitter(unittest.TestCase):
 class TestSubscriber(unittest.TestCase):
 
     def setUp(self):
-        self.emitter = zstreams.Emitter("/tmp/subtest", "ipc")
-        self.subscriber = zstreams.Subscriber("/tmp/subtest", "ipc")
+        self.emitter = zstreams.Emitter("ipc:///tmp/subtest")
+        self.subscriber = zstreams.Subscriber("ipc:///tmp/subtest")
         self.emitter.connect()
         self.subscriber.connect()
 
@@ -94,7 +94,7 @@ class TestSubscriber(unittest.TestCase):
         self.assertFalse(issubclass(zstreams.Subscriber, zstreams.Sender))
 
     def test_receive_before_connecting(self):
-        sub = zstreams.Subscriber("/tmp/subscriber_test_doesnt_exist", "ipc")
+        sub = zstreams.Subscriber("ipc:///tmp/subscriber_test_doesnt_exist")
         with self.assertRaises(excs.NotConnected):
             sub.receive()
 
@@ -131,9 +131,9 @@ class TestSubscriber(unittest.TestCase):
 class TestVentilator(unittest.TestCase):
 
     def setUp(self):
-        self.vent = zstreams.Ventilator("/tmp/vent_test", "ipc")
+        self.vent = zstreams.Ventilator("ipc:///tmp/vent_test")
         self.vent.connect()
-        self.worker = zstreams.Worker("/tmp/vent_test", "ipc")
+        self.worker = zstreams.Worker("ipc:///tmp/vent_test")
         self.worker.connect()
 
     def tearDown(self):
@@ -148,7 +148,7 @@ class TestVentilator(unittest.TestCase):
         self.assertFalse(issubclass(zstreams.Ventilator, zstreams.Receiver))
 
     def test_send_before_connecting(self):
-        vent = zstreams.Ventilator("/tmp/vent_test_doesnt_exist", "ipc")
+        vent = zstreams.Ventilator("ipc:///tmp/vent_test_doesnt_exist")
         with self.assertRaises(excs.NotConnected):
             vent.send("foo")
 
@@ -171,9 +171,9 @@ class TestVentilator(unittest.TestCase):
 class TestWorker(unittest.TestCase):
 
     def setUp(self):
-        self.vent = zstreams.Ventilator("/tmp/vent_test", "ipc")
+        self.vent = zstreams.Ventilator("ipc:///tmp/vent_test")
         self.vent.connect()
-        self.worker = zstreams.Worker("/tmp/vent_test", "ipc")
+        self.worker = zstreams.Worker("ipc:///tmp/vent_test")
         self.worker.connect()
 
     def tearDown(self):
@@ -187,7 +187,7 @@ class TestWorker(unittest.TestCase):
         self.assertFalse(issubclass(zstreams.Worker, zstreams.Sender))
 
     def test_receive_before_connecting(self):
-        worker = zstreams.Worker("/tmp/worker_test_doesnt_exist", "ipc")
+        worker = zstreams.Worker("ipc:///tmp/worker_test_doesnt_exist")
         with self.assertRaises(excs.NotConnected):
             worker.receive()
 
@@ -221,16 +221,16 @@ class TestWorker(unittest.TestCase):
 class TestSink(unittest.TestCase):
 
     def setUp(self):
-        self.vent = zstreams.Ventilator("/tmp/vent_test", "ipc")
-        self.sink = zstreams.Sink("/tmp/sink_test", "ipc")
-        worker = zstreams.Worker("/tmp/vent_test", "ipc")
-        worker_vent = zstreams.Ventilator("/tmp/sink_test", "ipc")
-        self.worker = zstreams.CompoundStream(worker, worker_vent)
+        self.vent = zstreams.Ventilator("ipc:///tmp/vent_test")
+        self.sink = zstreams.Sink("ipc:///tmp/sink_test")
+        worker = zstreams.Worker("ipc:///tmp/vent_test")
+        worker_pushr = zstreams.Pusher("ipc:///tmp/sink_test")
+        self.worker = zstreams.CompoundStream(worker, worker_pushr)
 
         def run_proxy():
             self.worker.stream_in.connect()
             # TODO: Make special stream type for pusher streams
-            self.worker.stream_out.channel_out.connect()
+            self.worker.stream_out.connect()
             self.worker.run()
 
         self.vent.connect()
@@ -251,7 +251,7 @@ class TestSink(unittest.TestCase):
         self.assertFalse(issubclass(zstreams.Sink, zstreams.Sender))
 
     def test_receive_before_connecting(self):
-        sink = zstreams.Sink("/tmp/sink_test_doesnt_exist", "ipc")
+        sink = zstreams.Sink("ipc:///tmp/sink_test_doesnt_exist")
         with self.assertRaises(excs.NotConnected):
             sink.receive()
 
@@ -288,11 +288,11 @@ class TestCompoundStream(unittest.TestCase):
     def setUp(self):
         # Ventilating subscriber
         rint = random.randint(1, 100)
-        self.emitter = zstreams.Emitter("/tmp/vent_sub_test", "ipc")
-        sub = zstreams.Subscriber(f"/tmp/vent_sub_test", "ipc")
-        vent = zstreams.Ventilator(f"/tmp/vent_sub_test_out_{rint}", "ipc")
+        self.emitter = zstreams.Emitter("ipc:///tmp/vent_sub_test")
+        sub = zstreams.Subscriber(f"ipc:///tmp/vent_sub_test")
+        vent = zstreams.Ventilator(f"ipc:///tmp/vent_sub_test_out_{rint}")
         self.vent_sub = zstreams.CompoundStream(sub, vent)
-        self.worker = zstreams.Worker(f"/tmp/vent_sub_test_out_{rint}", "ipc")
+        self.worker = zstreams.Worker(f"ipc:///tmp/vent_sub_test_out_{rint}")
 
         def run_proxy():
             self.vent_sub.stream_in.subscribe(1)

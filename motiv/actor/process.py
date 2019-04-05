@@ -121,11 +121,11 @@ class ExecutionContext(ExecutionContextBase):
             raise ActorInitializationError("No in-stream set")
         return self.stream_in.poll(self.poller, self._halt, self.poll_timeout)
 
-    def send(self, payload):
+    def send(self, payload, sync=True):
         """sends data over the output stream"""
         if not self.stream_out:
             raise ActorInitializationError("No out-stream set")
-        return self.stream_out.send(payload)
+        return self.stream_out.send(payload, sync)
 
     def publish(self, topic, payload):
         """publishes data over the output stream"""
@@ -188,9 +188,9 @@ class ExecutionContext(ExecutionContextBase):
         if self.stream_in is not None or self.stream_out is not None:
             raise ValueError("stream_in or stream_out or both are already set")
 
-        self._stream = value
         self.stream_in = value.stream_in
         self.stream_out = value.stream_out
+        self._stream = value
 
     @property
     def poll_timeout(self):

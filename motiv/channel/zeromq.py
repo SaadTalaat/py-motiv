@@ -5,6 +5,8 @@ Todo:
 """
 
 import os
+from urllib.parse import urlparse
+
 import zmq
 from ensure import ensure_annotations, ensure
 
@@ -24,7 +26,6 @@ class ChannelOut(ChannelOutType):
 
     Args:
         sock_type (int): 0MQ socket_type (e.g. `zmq.PULL`)
-        scheme (str): transfer protocol
         sockaddr (str): address to connect/bind to.
 
     Todo:
@@ -33,10 +34,12 @@ class ChannelOut(ChannelOutType):
     """
 
     @ensure_annotations
-    def __init__(self, sock_type: int, scheme: str, sockaddr: str):
+    def __init__(self, sock_type: int, sockaddr: str):
         # Internal only communication.
-        ensure(scheme).is_in(['inproc', 'ipc', 'unix'])
-        self.address_out = f"{scheme}://{sockaddr}"
+        url = urlparse(sockaddr)
+        scheme = url.scheme
+        ensure(scheme).is_in(['ipc', 'inproc', 'tcp'])
+        self.address_out = sockaddr
         self.sock_connected = False
         self.sock_type = sock_type
         self.pid = os.getpid()
@@ -115,7 +118,6 @@ class ChannelIn(ChannelInType):
 
     Args:
         sock_type (int): 0MQ socket_type (e.g. `zmq.PULL`)
-        scheme (str): transfer protocol
         sockaddr (str): address to connect/bind to.
 
     Todo:
@@ -124,10 +126,12 @@ class ChannelIn(ChannelInType):
     """
 
     @ensure_annotations
-    def __init__(self, sock_type: int, scheme: str, sockaddr: str):
+    def __init__(self, sock_type: int, sockaddr: str):
         # Internal only communication.
-        ensure(scheme).is_in(['inproc', 'ipc', 'unix'])
-        self.address_in = f"{scheme}://{sockaddr}"
+        url = urlparse(sockaddr)
+        scheme = url.scheme
+        ensure(scheme).is_in(['ipc', 'inproc', 'tcp'])
+        self.address_in = sockaddr
         self.pid = os.getpid()
         self.sock_connected = False
         self.sock_type = sock_type
