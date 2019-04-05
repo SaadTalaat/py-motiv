@@ -18,8 +18,8 @@ def getLogger(name):
     return logger
 
 
-publisher_stream = Emitter(address="/tmp/publisher", scheme="ipc")
-subscriber_stream = Subscriber(address="/tmp/publisher", scheme="ipc")
+publisher_stream = Emitter(address="ipc:///tmp/publisher")
+subscriber_stream = Subscriber(address="ipc:///tmp/publisher")
 
 
 class PublisherTicker(Ticker):
