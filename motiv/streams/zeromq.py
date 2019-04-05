@@ -23,11 +23,10 @@ class Emitter(mixin.EmitterType, Sender):
 
     Args:
         address(str): address to connect to (e.g. /tmp/socket).
-        scheme(str): transfer protocol (e.g. ipc, inproc)
     """
-    def __init__(self, address: str, scheme: str):
+    def __init__(self, address: str):
         self.address = address
-        self._cout = ChannelOut(zmq.PUB, scheme, address)
+        self._cout = ChannelOut(zmq.PUB, address)
 
     def publish(self, topic, payload, sync=True):
         """Publishes data over a topic
@@ -54,13 +53,12 @@ class Subscriber(mixin.SubscriberType, Receiver):
 
     Args:
         address(str): address to connect to (e.g. /tmp/socket).
-        scheme(str): transfer protocol (e.g. ipc, inproc)
     """
 
     @ensure_annotations
-    def __init__(self, address: str, scheme: str):
+    def __init__(self, address: str):
         self.address = address
-        self._cin = ChannelIn(zmq.SUB, scheme, address)
+        self._cin = ChannelIn(zmq.SUB, address)
 
     def subscribe(self, topic: int):
         """Subscribes to a topic
@@ -88,12 +86,11 @@ class Ventilator(mixin.VentilatorType, Sender):
 
     Args:
         address(str): address to connect to (e.g. /tmp/socket).
-        scheme(str): transfer protocol (e.g. ipc, inproc)
     """
     @ensure_annotations
-    def __init__(self, address: str, scheme: str):
+    def __init__(self, address: str):
         self.address = address
-        self._cout = ChannelOut(zmq.PUSH, scheme, address)
+        self._cout = ChannelOut(zmq.PUSH, address)
 
     def connect(self):
         """establish connection"""
@@ -110,13 +107,12 @@ class Worker(mixin.WorkerType, Receiver):
 
     Args:
         address(str): address to connect to (e.g. /tmp/socket).
-        scheme(str): transfer protocol (e.g. ipc, inproc)
     """
 
     @ensure_annotations
-    def __init__(self, address: str, scheme: str):
+    def __init__(self, address: str):
         self.address = address
-        self._cin = ChannelIn(zmq.PULL, scheme, address)
+        self._cin = ChannelIn(zmq.PULL, address)
 
     def connect(self):
         """establish connection"""
@@ -133,11 +129,11 @@ class Pusher(mixin.PusherType, Sender):
 
     Args:
         address(str): address to connect to (e.g. /tmp/socket)
-        scheme(str): transfer protocol (e.g. ipc, inproc)"""
+    """
     @ensure_annotations
-    def __init__(self, address: str, scheme: str):
+    def __init__(self, address: str):
         self.address = address
-        self._cout = ChannelOut(zmq.PUSH, scheme, address)
+        self._cout = ChannelOut(zmq.PUSH, address)
 
     def connect(self):
         """establish connection"""
@@ -154,13 +150,12 @@ class Sink(mixin.SinkType, Receiver):
 
     Args:
         address(str): address to connect to (e.g. /tmp/socket).
-        scheme(str): transfer protocol (e.g. ipc, inproc)
     """
 
     @ensure_annotations
-    def __init__(self, address: str, scheme: str):
+    def __init__(self, address: str):
         self.address = address
-        self._cin = ChannelIn(zmq.PULL, scheme, address)
+        self._cin = ChannelIn(zmq.PULL, address)
 
     def connect(self):
         """establish connection"""
