@@ -5,9 +5,9 @@ Todo:
 """
 
 import os
-import zmq
-
 from urllib.parse import urlparse
+
+import zmq
 from ensure import ensure_annotations, ensure
 
 from motiv.exceptions import AlreadyConnected, NotConnected

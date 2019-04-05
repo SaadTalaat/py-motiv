@@ -188,6 +188,10 @@ class CompoundStream(mixin.CompoundStreamType, Sender, Receiver):
         """Starts a proxy over input and output streams"""
         self.channel.proxy()
 
+    def connect(self):
+        self.stream_in.connect()
+        self.stream_out.connect()
+
     @property
     def channel_in(self):
         """input channel"""
@@ -214,6 +218,7 @@ __all__ = [
         'Subscriber',
         'Ventilator',
         'Worker',
+        'Pusher',
         'Sink',
         'CompoundStream',
         'Receiver',

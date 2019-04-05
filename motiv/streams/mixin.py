@@ -196,6 +196,10 @@ class CompoundStreamType(SenderType, ReceiverType):
         """polls input channel for received data"""
         self.stream_in.poll(*args, **kwargs)
 
+    @abc.abstractmethod
+    def connect(self):
+        """establish connection"""
+
     def close(self):
         """closes underlying streams"""
         self.stream_in.close()
@@ -207,6 +211,7 @@ __all__ = [
         'SubscriberType',
         'VentilatorType',
         'WorkerType',
+        'PusherType',
         'SinkType',
         'CompoundStreamType',
         ]
