@@ -3,37 +3,13 @@
 import abc
 import signal
 
-from multiprocessing import Process, Event
+from multiprocessing import Process
 from ensure import ensure_annotations, ensure
 
-from motiv.sync import SystemEvent
+from motiv.sync import ProcessEvent
 from motiv.exceptions import ActorInitializationError
 from motiv.channel import zeromq as zchannels
 from motiv.streams import zeromq as zstreams
-
-
-class ProcessEvent(SystemEvent):
-    """Event synchronization primitive.
-    Wraps `multiprocessing.Event`
-    """
-    def __init__(self, *args, **kwargs):
-        self.event = Event(*args, **kwargs)
-
-    def set(self):
-        """sets the event"""
-        return self.event.set()
-
-    def clear(self):
-        """clears the event"""
-        return self.event.clear()
-
-    def is_set(self):
-        """checks if the event is set
-
-        Returns:
-            bool: True if set, False if cleared
-        """
-        return self.event.is_set()
 
 
 class ExecutionContextBase(Process, abc.ABC):
@@ -51,21 +27,22 @@ class ExecutionContextBase(Process, abc.ABC):
         self._halt = ProcessEvent()
         super().__init__(name=name)
 
-    def __signal_handler(self, _signum, _frame):
-        self.stop()
-
     def initialize_context(self):
         """setups context environment
 
         this function should not be overloaded
         outside of the package.
         """
+
+        def __signal_handler(_signum, _frame):
+            self.stop()
+
         # Setup signal handling.
-        signal.signal(signal.SIGABRT, self.__signal_handler)
-        signal.signal(signal.SIGTERM, self.__signal_handler)
-        signal.signal(signal.SIGCHLD, self.__signal_handler)
-        signal.signal(signal.SIGINT, self.__signal_handler)
-        signal.signal(signal.SIGILL, self.__signal_handler)
+        signal.signal(signal.SIGABRT, __signal_handler)
+        signal.signal(signal.SIGTERM, __signal_handler)
+        signal.signal(signal.SIGCHLD, __signal_handler)
+        signal.signal(signal.SIGINT, __signal_handler)
+        signal.signal(signal.SIGILL, __signal_handler)
 
     @abc.abstractmethod
     def pre_start(self):
@@ -115,11 +92,11 @@ class ExecutionContext(ExecutionContextBase):
         # Properties
         self._poll_timeout = 5
 
-    def receive(self):
+    def receive(self, **kwargs):
         """polls input stream for data"""
         if not self.stream_in:
             raise ActorInitializationError("No in-stream set")
-        return self.stream_in.poll(self.poller, self._halt, self.poll_timeout)
+        return self.stream_in.poll(self.poller, self._halt, **kwargs)
 
     def send(self, payload, sync=True):
         """sends data over the output stream"""

@@ -79,10 +79,13 @@ class WorkerTicker(Ticker):
         self.stream.close()
 
     def tick(self):
-        payload = self.receive()
-        self.logger.info(f"\tReceived {payload}")
-        result = WorkResult(self.name, payload)
-        self.send(result, sync=False)
+        try:
+            payload = self.receive(timeout=3000)
+            self.logger.info(f"\tReceived {payload}")
+            result = WorkResult(self.name, payload)
+            self.send(result, sync=False)
+        except TimeoutError:
+            self.logger.exception("Timed out")
 
 
 class SinkTicker(Ticker):
@@ -95,10 +98,13 @@ class SinkTicker(Ticker):
         self.stream_in.close()
 
     def tick(self):
-        payload = self.receive()
-        for frame in payload:
-            result = WorkResult.deserialize(frame)
-            self.logger.info(f"\tReceived {result}")
+        try:
+            payload = self.receive()
+            for frame in payload:
+                result = WorkResult.deserialize(frame)
+                self.logger.info(f"\tReceived {result}")
+        except TimeoutError:
+            self.logger.exception("Timed out")
 
 
 if __name__ == '__main__':
