@@ -3,8 +3,8 @@
 import abc
 import signal
 
-from ensure import ensure_annotations, ensure
 from multiprocessing import Process
+from ensure import ensure_annotations, ensure
 
 from motiv.sync import ProcessEvent
 from motiv.exceptions import ActorInitializationError

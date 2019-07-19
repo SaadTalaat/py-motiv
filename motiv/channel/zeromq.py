@@ -5,9 +5,8 @@ Todo:
 """
 
 import os
-import zmq
-
 from urllib.parse import urlparse
+import zmq
 from ensure import ensure_annotations, ensure
 
 from motiv.exceptions import AlreadyConnected, NotConnected
@@ -202,7 +201,7 @@ class ChannelIn(ChannelInType):
         if not self.sock_connected:
             raise NotConnected("channel has not binded nor connected")
 
-        if timeout < poll_timeout and timeout >= 0:
+        if poll_timeout > timeout >= 0:
             raise ValueError(f"timeout({timeout}) can't be"
                              " less than poll_timeout({poll_timeout})")
 
@@ -212,10 +211,8 @@ class ChannelIn(ChannelInType):
 
         if timeout >= 0:
             return self._poll_timeout(poller, exit_condition,
-                    timeout, poll_timeout)
-        else:
-            return self._poll_naive(poller, exit_condition,
-                    timeout, poll_timeout)
+                                      timeout, poll_timeout)
+        return self._poll_naive(poller, exit_condition, poll_timeout)
 
     def _poll_timeout(self, poller, exit_condition, timeout, poll_timeout):
         timed_out = TimeoutEvent(timeout)
@@ -227,7 +224,7 @@ class ChannelIn(ChannelInType):
 
         raise TimeoutError("message fetch timed out")
 
-    def _poll_naive(self, poller, exit_condition, timeout, poll_timeout):
+    def _poll_naive(self, poller, exit_condition, poll_timeout):
         while not exit_condition.is_set():
             socks = dict(poller.poll(poll_timeout))
             if self.sock_in in socks:
