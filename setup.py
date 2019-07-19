@@ -5,6 +5,7 @@ from setuptools import setup, find_packages
 
 BASE_DIR = os.path.dirname(__file__)
 REQS_PATH = os.path.join(BASE_DIR, 'requirements.txt')
+README_PATH = os.path.join(BASE_DIR, 'requirements.txt')
 VERSION_PATH = os.path.join(BASE_DIR, 'motiv/version.py')
 
 with open(VERSION_PATH, "r") as fh:
@@ -36,6 +37,9 @@ INSTALL_REQUIRES, DEP_LINKS = get_dependencies()
 
 setup(
     name="motiv",
+    description="Motiv, Simple and Efficient processing pipelining.",
+    long_description=open(README_PATH).read(),
+    long_description_content_type='text/markdown',
     version=__version__,
     author="Saad Talaat",
     author_email="saadtalaat@gmail.com",
