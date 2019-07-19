@@ -25,6 +25,10 @@ class SystemEvent(abc.ABC):
     def clear(self):
         """clears the event"""
 
+    @abc.abstractmethod
+    def wait(self, *args, **kwargs):
+        """waits till event is set"""
+
 
 __all__ = [
         'SystemEvent',
