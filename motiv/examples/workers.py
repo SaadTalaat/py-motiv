@@ -54,8 +54,11 @@ class WorkerTicker(Ticker):
         self.stream_in.close()
 
     def tick(self):
-        payload = self.receive()
-        self.logger.info(f"\tReceived {payload}")
+        try:
+            payload = self.receive(timeout=3000)
+            self.logger.info(f"\tReceived {payload}")
+        except TimeoutError:
+            self.logger.exception("Timed out")
 
 
 if __name__ == '__main__':

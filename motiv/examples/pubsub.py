@@ -27,7 +27,6 @@ class PublisherTicker(Ticker):
     def pre_start(self):
         self.logger = getLogger(self.name)
         self.stream_out.connect()
-
     def post_stop(self):
         self.stream_out.close()
 
@@ -49,9 +48,11 @@ class SubscriberTicker(Ticker):
         self.stream_in.close()
 
     def tick(self):
-        channel, payload = self.receive()
-        self.logger.info(f"\tReceived {payload}")
-
+        try:
+            channel, payload = self.receive(timeout=3000)
+            self.logger.info(f"\tReceived {payload}")
+        except TimeoutError:
+            self.logger.exception("Timed out")
 
 if __name__ == '__main__':
 
