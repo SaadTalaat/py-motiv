@@ -32,7 +32,7 @@ class PublisherTicker(Ticker):
 
     def tick(self):
         time.sleep(2)
-        self.publish(1, b"Hello world")
+        self.publish("mytopic", b"Hello world")
         print("\n")
         self.logger.info("\tPublishing to subscribers")
 
@@ -41,7 +41,7 @@ class SubscriberTicker(Ticker):
 
     def pre_start(self):
         self.logger = getLogger(self.name)
-        self.stream_in.subscribe(1)
+        self.stream_in.subscribe("mytopic")
         self.stream_in.connect()
 
     def post_stop(self):

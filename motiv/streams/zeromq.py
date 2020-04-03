@@ -5,7 +5,7 @@ Todo:
 """
 import zmq
 
-from ensure import ensure_annotations, ensure
+from ensure import ensure_annotations
 from motiv.streams import mixin
 from motiv.channel import Channel, ChannelOut, ChannelIn
 
@@ -32,10 +32,15 @@ class Emitter(mixin.EmitterType, Sender):
         """Publishes data over a topic
 
         Args:
-            topic(int): topic to broadcast payload over.
+            topic: topic to broadcast payload over.
             payload: data to publish
         """
-        _topic = bytes([topic])
+        if isinstance(topic, str):
+            _topic = topic.encode("utf8")
+        elif isinstance(topic, bytes):
+            _topic = topic
+        else:
+            raise TypeError("Topic must be of either bytes, str types")
         return self.send([_topic, payload], sync)
 
     def connect(self):
@@ -60,14 +65,18 @@ class Subscriber(mixin.SubscriberType, Receiver):
         self.address = address
         self._cin = ChannelIn(zmq.SUB, address)
 
-    def subscribe(self, topic: int):
+    def subscribe(self, topic):
         """Subscribes to a topic
 
         Args:
-            topic(int): topic to subscribe to.
+            topic: topic to subscribe to.
         """
-        ensure(topic).is_an(int)
-        _topic = bytes([topic])
+        if isinstance(topic, str):
+            _topic = topic.encode("utf8")
+        elif isinstance(topic, bytes):
+            _topic = topic
+        else:
+            raise TypeError("Topic must be of either bytes, str types")
         self.channel_in.sock_in.setsockopt(zmq.SUBSCRIBE, _topic)
 
     def connect(self):

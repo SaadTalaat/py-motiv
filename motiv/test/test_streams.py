@@ -52,26 +52,27 @@ class TestEmitter(unittest.TestCase):
     def test_publish_before_connecting(self):
         emitter = zstreams.Emitter("ipc:///tmp/emitter_test_doesnt_exist")
         with self.assertRaises(excs.NotConnected):
-            emitter.publish(1, b"foo")
+            emitter.publish("test_topic", b"foo")
 
     def test_publish_wrong_type(self):
         with self.assertRaises(TypeError):
-            self.emitter.publish("topic", b"message")
+            self.emitter.publish(1.1, b"message")
 
         with self.assertRaises(TypeError):
-            self.emitter.publish(1, "message")
+            self.emitter.publish(None, "message")
 
     def test_publish_right_types(self):
-        self.emitter.publish(1, b"message")
+        self.emitter.publish("foo", b"message")
+        self.emitter.publish(b"foo", b"message")
 
     def test_publish_non_serializable_object(self):
         o = object()
         with self.assertRaises(TypeError):
-            self.emitter.publish(1, o)
+            self.emitter.publish("test_topic", o)
 
     def test_publish_serializable(self):
         m = msg.DummySerdeMessage("field")
-        self.emitter.publish(1, m)
+        self.emitter.publish("test_topic", m)
 
 
 class TestSubscriber(unittest.TestCase):
@@ -100,26 +101,26 @@ class TestSubscriber(unittest.TestCase):
 
     def test_subscribed_behavior(self):
         pool = ThreadPoolExecutor(max_workers=1)
-        self.subscriber.subscribe(1)
+        self.subscriber.subscribe("test_topic")
 
         result = pool.submit(self.subscriber.receive)
         # Yield GIL
         time.sleep(0.001)
-        self.emitter.publish(1, b"test")
+        self.emitter.publish("test_topic", b"test")
         channel, payload = result.result()
 
         self.assertEqual(payload, b"test")
-        self.assertEqual(channel, bytes([1]))
+        self.assertEqual(channel, b"test_topic")
 
     def test_receive_serialized_object(self):
         pool = ThreadPoolExecutor(max_workers=1)
         m = msg.DummySerdeMessage("field")
-        self.subscriber.subscribe(1)
+        self.subscriber.subscribe("test_topic")
 
         result = pool.submit(self.subscriber.receive)
         # Yield GIL
         time.sleep(0.001)
-        self.emitter.publish(1, m)
+        self.emitter.publish("test_topic", m)
         channel, payload = result.result()
         objs = msg.DummySerdeMessage.deserialize(payload)
 
@@ -295,7 +296,7 @@ class TestCompoundStream(unittest.TestCase):
         self.worker = zstreams.Worker(f"ipc:///tmp/vent_sub_test_out_{rint}")
 
         def run_proxy():
-            self.vent_sub.stream_in.subscribe(1)
+            self.vent_sub.stream_in.subscribe("test_topic")
             self.vent_sub.stream_in.connect()
             self.vent_sub.stream_out.connect()
             self.vent_sub.run()
@@ -315,8 +316,8 @@ class TestCompoundStream(unittest.TestCase):
         self.assertEqual(self.vent_sub.channel_out, self.vent_sub.channel_in)
 
     def test_stream_behavior(self):
-        self.emitter.publish(1, b"foo")
+        self.emitter.publish("test_topic", b"foo")
         # Yield GIL to proxy
         channel, payload = self.worker.receive()
         self.assertEqual(payload, b"foo")
-        self.assertEqual(channel, bytes([1]))
+        self.assertEqual(channel, b"test_topic")

@@ -54,11 +54,11 @@ class SubscriberType(ReceiverType):
         """abstract connect method"""
 
     @abc.abstractmethod
-    def subscribe(self, topic: int):
+    def subscribe(self, topic):
         """subscribe to a topic
 
         Args:
-            topic (int): topic to subscribe to.
+            topic: topic to subscribe to.
         """
 
     def receive(self):
