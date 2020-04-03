@@ -5,7 +5,7 @@ Todo:
 """
 import zmq
 
-from ensure import ensure_annotations, ensure
+from ensure import ensure_annotations
 from motiv.streams import mixin
 from motiv.channel import Channel, ChannelOut, ChannelIn
 
