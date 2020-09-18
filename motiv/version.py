@@ -16,7 +16,7 @@ Note:
 def get_version():
     VERSION_MAJOR = 0
     VERSION_MINOR = 1
-    BUILD_NUMBER = 0
+    BUILD_NUMBER = 1
 
     VERSION = f"{VERSION_MAJOR}.{VERSION_MINOR}.{BUILD_NUMBER}"
     return VERSION

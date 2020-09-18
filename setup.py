@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 BASE_DIR = os.path.dirname(__file__)
 REQS_PATH = os.path.join(BASE_DIR, 'requirements.txt')
-README_PATH = os.path.join(BASE_DIR, 'requirements.txt')
+README_PATH = os.path.join(BASE_DIR, 'README.md')
 VERSION_PATH = os.path.join(BASE_DIR, 'motiv/version.py')
 
 with open(VERSION_PATH, "r") as fh:
